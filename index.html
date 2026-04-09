@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마취과 문제풀이</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg: #0d1117; --surface: #161b22; --surface2: #1c2230;
+  --border: #30363d; --accent: #58a6ff; --green: #3fb950;
+  --red: #f78166; --yellow: #e3b341; --text: #e6edf3;
+  --text2: #8b949e; --text3: #6e7681; --r: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── Header ── */
+header {
+  border-bottom: 1px solid var(--border); padding: 0 24px; height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: rgba(13,17,23,.93); backdrop-filter: blur(10px); z-index: 100;
+}
+.logo { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--accent); }
+.logo small { font-family: 'DM Mono', monospace; font-size: .7rem; color: var(--text3); margin-left: 8px; }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.sync-badge { font-size: .72rem; font-family: 'DM Mono', monospace; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); color: var(--text3); transition: all .3s; }
+.sync-badge.syncing { border-color: var(--accent); color: var(--accent); }
+.sync-badge.synced  { border-color: var(--green);  color: var(--green);  }
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab { background: none; border: none; cursor: pointer; color: var(--text2); font-family: 'Noto Sans KR', sans-serif; font-size: .83rem; padding: 6px 14px; border-radius: 6px; transition: all .15s; }
+.nav-tab:hover { background: var(--surface); color: var(--text); }
+.nav-tab.active { background: var(--surface2); color: var(--accent); }
+
+/* ── Layout ── */
+.app { display: flex; flex: 1; height: calc(100vh - 54px); overflow: hidden; }
+.sidebar { width: 250px; min-width: 250px; border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; padding: 14px 10px; display: flex; flex-direction: column; gap: 12px; }
+.sidebar-title { font-size: .68rem; font-weight: 700; letter-spacing: .1em; color: var(--text3); text-transform: uppercase; padding: 0 6px; }
+.q-item { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border-radius: 7px; cursor: pointer; transition: background .12s; border: 1px solid transparent; font-size: .8rem; }
+.q-item:hover { background: var(--surface2); }
+.q-item.sel { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-none    { background: var(--border); }
+.dot-correct { background: var(--green); }
+.dot-wrong   { background: var(--red); }
+.dot-unknown { background: var(--yellow); }
+.dot-flagged { background: var(--accent); }
+.q-num { font-family: 'DM Mono', monospace; font-size: .72rem; color: var(--text3); min-width: 22px; }
+.sidebar-stats { font-size: .78rem; color: var(--text2); display: flex; flex-direction: column; gap: 4px; padding: 2px 6px; }
+.prog-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+.prog-fill  { height: 100%; border-radius: 2px; transition: width .4s ease; }
+
+/* ── Main ── */
+.main { flex: 1; overflow-y: auto; padding: 24px; display: flex; gap: 20px; }
+
+/* ── Upload ── */
+#upload-screen { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+.drop-box { border: 2px dashed var(--border); border-radius: 14px; padding: 56px 72px; text-align: center; cursor: pointer; transition: all .2s; max-width: 520px; width: 100%; }
+.drop-box:hover, .drop-box.over { border-color: var(--accent); background: rgba(88,166,255,.05); }
+.drop-icon { font-size: 2.8rem; margin-bottom: 14px; }
+.drop-title { font-family: 'DM Serif Display', serif; font-size: 1.5rem; margin-bottom: 8px; }
+.drop-sub { color: var(--text2); font-size: .87rem; line-height: 1.6; }
+#file-input { display: none; }
+.info-box { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; font-size: .82rem; color: var(--text2); max-width: 520px; width: 100%; line-height: 1.7; }
+.info-box strong { color: var(--accent); }
+
+/* ── Buttons ── */
+.btn { padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Noto Sans KR', sans-serif; font-size: .85rem; font-weight: 500; transition: all .15s; }
+.btn-primary   { background: var(--accent); color: #0d1117; }
+.btn-primary:hover   { background: #79b8ff; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger    { background: rgba(247,129,102,.12); color: var(--red); border: 1px solid rgba(247,129,102,.3); }
+.btn-danger:hover    { background: rgba(247,129,102,.22); }
+.btn:disabled  { opacity: .4; cursor: not-allowed; }
+
+/* ── Quiz ── */
+#quiz-screen { display: none; flex: 1; gap: 20px; }
+.q-panel { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.q-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.nav-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: .8rem; transition: all .12s; }
+.nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.nav-btn:disabled { opacity: .35; cursor: not-allowed; }
+.q-ctr { font-family: 'DM Mono', monospace; color: var(--text2); font-size: .82rem; }
+.flag-btn { margin-left: auto; background: none; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: .8rem; color: var(--text2); transition: all .12s; }
+.flag-btn:hover   { border-color: var(--yellow); color: var(--yellow); }
+.flag-btn.flagged { border-color: var(--yellow); color: var(--yellow); background: rgba(227,179,65,.1); }
+.q-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 22px; line-height: 1.85; font-size: .93rem; white-space: pre-wrap; max-height: 320px; overflow-y: auto; flex-shrink: 0; }
+.ans-label { font-size: .72rem; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+.ans-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; min-height: 150px; font-size: .88rem; line-height: 1.85; }
+.ans-box .ah { font-size: .72rem; font-weight: 700; color: var(--accent); letter-spacing: .07em; text-transform: uppercase; margin: 12px 0 4px; }
+.act-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── Right panel ── */
+.r-panel { width: 290px; display: flex; flex-direction: column; gap: 14px; }
+.p-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; }
+.p-title { font-size: .7rem; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+.status-row { display: flex; gap: 7px; }
+.s-btn { flex: 1; padding: 8px 4px; border-radius: 7px; border: 1px solid var(--border); cursor: pointer; font-size: .76rem; font-family: 'Noto Sans KR', sans-serif; background: transparent; color: var(--text2); transition: all .12s; text-align: center; }
+.s-btn:hover { border-color: var(--text2); }
+.s-btn.ac { border-color: var(--green);  background: rgba(63,185,80,.14);  color: var(--green); }
+.s-btn.aw { border-color: var(--red);    background: rgba(247,129,102,.14); color: var(--red); }
+.s-btn.au { border-color: var(--yellow); background: rgba(227,179,65,.14);  color: var(--yellow); }
+.memo-ta { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 11px; color: var(--text); font-family: 'Noto Sans KR', sans-serif; font-size: .83rem; line-height: 1.7; resize: vertical; min-height: 90px; transition: border-color .12s; }
+.memo-ta:focus { outline: none; border-color: var(--accent); }
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.stat-item { background: var(--surface2); border-radius: 7px; padding: 9px 11px; }
+.stat-num { font-family: 'DM Mono', monospace; font-size: 1.25rem; font-weight: 500; }
+.stat-lbl { font-size: .68rem; color: var(--text3); margin-top: 1px; }
+
+/* ── Review ── */
+#review-screen { display: none; flex: 1; flex-direction: column; gap: 18px; }
+.rv-header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.rv-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.f-btn { padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: transparent; cursor: pointer; font-size: .78rem; color: var(--text2); font-family: 'Noto Sans KR', sans-serif; transition: all .12s; }
+.f-btn:hover { border-color: var(--text); color: var(--text); }
+.f-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.1); }
+.rv-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; flex: 1; padding-bottom: 20px; }
+.rv-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; cursor: pointer; transition: border-color .12s; }
+.rv-card:hover { border-color: var(--accent); }
+.rv-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.rv-q { font-size: .85rem; line-height: 1.65; color: var(--text2); max-height: 58px; overflow: hidden; }
+.rv-memo { font-size: .76rem; color: var(--yellow); margin-top: 6px; }
+.badge { font-size: .63rem; font-family: 'DM Mono', monospace; padding: 2px 7px; border-radius: 20px; }
+.b-red    { background: rgba(247,129,102,.14); color: var(--red); }
+.b-yellow { background: rgba(227,179,65,.14);  color: var(--yellow); }
+.b-blue   { background: rgba(88,166,255,.14);  color: var(--accent); }
+.empty { text-align: center; color: var(--text3); padding: 48px; }
+
+/* ── Dots anim ── */
+@keyframes dp { 0%,80%,100%{opacity:.2;transform:scale(.7);}40%{opacity:1;transform:scale(1);} }
+.thinking { color: var(--text3); font-size: .85rem; display: flex; align-items: center; gap: 6px; }
+.dots span { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); animation: dp 1.2s ease-in-out infinite; }
+.dots span:nth-child(2){animation-delay:.2s;} .dots span:nth-child(3){animation-delay:.4s;}
+
+/* ── Toast ── */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--green); color: var(--text); padding: 9px 18px; border-radius: 8px; font-size: .83rem; opacity: 0; transform: translateY(8px); transition: all .2s; z-index: 999; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.warn { border-color: var(--red); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Anesthesia Quiz <small>마취통증의학과</small></div>
+  <div class="header-right">
+    <div class="sync-badge" id="sync-badge">● 로컬</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="showScreen('quiz')">📄 문제풀기</button>
+      <button class="nav-tab" onclick="showScreen('review')">🔖 오답노트</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar" style="display:none">
+    <div>
+      <div class="sidebar-title" style="margin-bottom:8px">문제 목록</div>
+      <div id="q-list"></div>
+    </div>
+    <div style="margin-top:auto; padding-top:14px; border-top:1px solid var(--border);">
+      <div class="sidebar-title" style="margin-bottom:6px">진행 현황</div>
+      <div class="sidebar-stats" id="sidebar-stats"></div>
+      <button class="btn btn-danger" style="width:100%;margin-top:12px;font-size:.8rem;" onclick="resetAll()">📤 새 파일 업로드</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main" id="main-area">
+
+    <!-- Upload -->
+    <div id="upload-screen">
+      <div class="drop-box" id="drop-zone"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+        <div class="drop-icon">📋</div>
+        <div class="drop-title">문제 PDF 업로드</div>
+        <div class="drop-sub">마취과 문제집 PDF를 업로드하면<br>AI가 자동으로 분석하고 해설을 제공합니다</div>
+      </div>
+      <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">파일 선택</button>
+      <input type="file" id="file-input" accept=".pdf" onchange="onFileSelect(event)">
+      <div class="info-box">
+        <strong>☁️ 기기 간 자동 동기화</strong><br>
+        채점 기록, 메모, 해설이 Supabase DB에 저장되어<br>
+        아이패드 · 폰 · PC 어디서든 이어서 공부할 수 있습니다.
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div id="quiz-screen">
+      <div class="q-panel">
+        <div class="q-header">
+          <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>◀ 이전</button>
+          <span class="q-ctr" id="q-ctr">1 / 1</span>
+          <button class="nav-btn" id="next-btn" onclick="navigate(1)">다음 ▶</button>
+          <button class="flag-btn" id="flag-btn" onclick="toggleFlag()">🔖 중요 표시</button>
+        </div>
+        <div class="prog-wrap"><div class="prog-fill" id="prog" style="background:var(--accent)"></div></div>
+        <div class="q-card" id="q-text"></div>
+        <div class="ans-label">AI 해설 (Claude)</div>
+        <div class="ans-box" id="ans-box"><span style="color:var(--text3);font-size:.86rem;">▶ '해설 보기'를 눌러주세요</span></div>
+        <div class="act-row">
+          <button class="btn btn-primary" id="explain-btn" onclick="getExplanation()">✨ 해설 보기</button>
+          <button class="btn btn-secondary" onclick="getExplanation(true)">🔄 재생성</button>
+        </div>
+      </div>
+
+      <div class="r-panel">
+        <div class="p-card">
+          <div class="p-title">채점</div>
+          <div class="status-row">
+            <button class="s-btn" id="s-correct" onclick="setStatus('correct')">✅ 맞음</button>
+            <button class="s-btn" id="s-wrong"   onclick="setStatus('wrong')">❌ 틀림</button>
+            <button class="s-btn" id="s-unknown" onclick="setStatus('unknown')">❓ 모름</button>
+          </div>
+        </div>
+        <div class="p-card">
+          <div class="p-title">메모</div>
+          <textarea class="memo-ta" id="memo-input" placeholder="핵심 개념, 기억할 포인트..."></textarea>
+          <div style="display:flex;justify-content:flex-end;margin-top:7px">
+            <button class="btn btn-secondary" style="font-size:.76rem;padding:5px 13px;" onclick="saveMemo()">저장</button>
+          </div>
+        </div>
+        <div class="p-card">
+          <div class="p-title">전체 통계</div>
+          <div class="stat-grid" id="stat-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review -->
+    <div id="review-screen">
+      <div class="rv-header">
+        <div class="rv-title">오답노트</div>
+        <div class="filter-row">
+          <button class="f-btn active" onclick="setFilter('all',this)">전체</button>
+          <button class="f-btn" onclick="setFilter('wrong',this)">❌ 틀린 것</button>
+          <button class="f-btn" onclick="setFilter('unknown',this)">❓ 모르는 것</button>
+          <button class="f-btn" onclick="setFilter('flagged',this)">🔖 중요</button>
+          <button class="f-btn" onclick="setFilter('memo',this)">📝 메모 있음</button>
+        </div>
+      </div>
+      <div class="rv-list" id="rv-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+// ── Supabase config ──────────────────────────────────────
+const SB_URL = 'https://kgdnrfmqddedpizoqvyx.supabase.co';
+const SB_KEY = 'sb_publishable_2DIB8ipTK5Wp1eskX10qOA_5fvxWaDm';
+const TABLE  = 'quiz_records';
+
+const sbFetch = (path, opts={}) => fetch(`${SB_URL}/rest/v1/${path}`, {
+  ...opts,
+  headers: {
+    'apikey': SB_KEY,
+    'Authorization': `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates,return=representation',
+    ...opts.headers
+  }
+});
+
+// ── State ────────────────────────────────────────────────
+const S = {
+  questions: [], current: 0,
+  records: {},   // key: "pdfName::idx" → {status,memo,flagged,answer,id}
+  pdfName: '',   filter: 'all',
+};
+
+// ── DB helpers ───────────────────────────────────────────
+async function dbLoad(pdfName) {
+  try {
+    const res = await sbFetch(`${TABLE}?pdf_name=eq.${encodeURIComponent(pdfName)}&select=*`);
+    if (!res.ok) return;
+    const rows = await res.json();
+    rows.forEach(r => {
+      S.records[`${r.pdf_name}::${r.q_index}`] = {
+        status: r.status, memo: r.memo, flagged: r.flagged, answer: r.answer, id: r.id
+      };
+    });
+    setSyncBadge('synced');
+    setTimeout(() => setSyncBadge('idle'), 2000);
+  } catch(e) { console.warn('DB load failed', e); }
+}
+
+async function dbSave(pdfName, idx, rec) {
+  setSyncBadge('syncing');
+  try {
+    const body = JSON.stringify({
+      pdf_name: pdfName, q_index: idx,
+      status: rec.status || null, memo: rec.memo || null,
+      flagged: !!rec.flagged, answer: rec.answer || null,
+      updated_at: new Date().toISOString()
+    });
+    await sbFetch(TABLE, { method: 'POST', body });
+    setSyncBadge('synced');
+    setTimeout(() => setSyncBadge('idle'), 1800);
+  } catch(e) { setSyncBadge('idle'); console.warn('DB save failed', e); }
+}
+
+// ── Sync badge ───────────────────────────────────────────
+function setSyncBadge(state) {
+  const el = document.getElementById('sync-badge');
+  el.className = 'sync-badge' + (state === 'syncing' ? ' syncing' : state === 'synced' ? ' synced' : '');
+  el.textContent = state === 'syncing' ? '↑ 저장 중...' : state === 'synced' ? '✓ 동기화됨' : '● 클라우드';
+}
+
+// ── PDF parsing ──────────────────────────────────────────
+async function parsePDF(file) {
+  const lib = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs');
+  lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs';
+  const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+  let txt = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const tc = await (await pdf.getPage(i)).getTextContent();
+    txt += tc.items.map(x => x.str).join(' ') + '\n';
+  }
+  return txt;
+}
+
+function splitQ(text) {
+  const parts = text.split(/(?=\n?\s*\d{1,3}[.)]\s)/).map(s => s.trim()).filter(s => s.length > 15);
+  return (parts.length > 1 ? parts : [text]).slice(0, 200).map((t, i) => ({ text: t, idx: i }));
+}
+
+// ── File handling ────────────────────────────────────────
+window.onFileSelect = async (e) => { const f = e.target.files[0]; if (f) await loadPDF(f); };
+window.onDragOver  = (e) => { e.preventDefault(); document.getElementById('drop-zone').classList.add('over'); };
+window.onDragLeave = ()  => { document.getElementById('drop-zone').classList.remove('over'); };
+window.onDrop = async (e) => {
+  e.preventDefault(); document.getElementById('drop-zone').classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f?.type === 'application/pdf') await loadPDF(f);
+  else toast('PDF 파일만 가능합니다', 'warn');
+};
+
+async function loadPDF(file) {
+  toast('PDF 분석 중...', 'info');
+  try {
+    const text = await parsePDF(file);
+    const qs = splitQ(text);
+    if (!qs.length) throw new Error('문제를 찾지 못했습니다');
+    S.questions = qs;
+    S.pdfName   = file.name;
+    S.current   = 0;
+
+    // Load saved records from DB
+    await dbLoad(file.name);
+
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('quiz-screen').style.display = 'flex';
+    document.getElementById('sidebar').style.display = 'flex';
+
+    renderSidebar(); renderQ(); renderStats();
+    toast(`${qs.length}개 문제 로드 완료!`);
+  } catch(e) { toast('오류: ' + e.message, 'warn'); }
+}
+
+// ── Render ───────────────────────────────────────────────
+function rec(idx) {
+  const k = `${S.pdfName}::${idx ?? S.current}`;
+  if (!S.records[k]) S.records[k] = {};
+  return S.records[k];
+}
+
+function renderQ() {
+  const q = S.questions[S.current]; if (!q) return;
+  const r = rec();
+
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('q-ctr').textContent   = `${S.current + 1} / ${S.questions.length}`;
+  document.getElementById('prog').style.width    = `${((S.current + 1) / S.questions.length) * 100}%`;
+  document.getElementById('prev-btn').disabled   = S.current === 0;
+  document.getElementById('next-btn').disabled   = S.current === S.questions.length - 1;
+
+  const fb = document.getElementById('flag-btn');
+  fb.className = 'flag-btn' + (r.flagged ? ' flagged' : '');
+  fb.textContent = r.flagged ? '🔖 표시됨' : '🔖 중요 표시';
+
+  const ab = document.getElementById('ans-box');
+  ab.innerHTML = r.answer ? fmtAns(r.answer) : `<span style="color:var(--text3);font-size:.86rem;">▶ '해설 보기'를 눌러주세요</span>`;
+
+  ['correct','wrong','unknown'].forEach(s => {
+    document.getElementById(`s-${s}`).className = `s-btn${r.status === s ? ` a${s[0]}` : ''}`;
+  });
+  document.getElementById('memo-input').value = r.memo || '';
+
+  document.querySelectorAll('.q-item').forEach((el, i) => el.classList.toggle('sel', i === S.current));
+  document.querySelectorAll('.q-item')[S.current]?.scrollIntoView({ block: 'nearest' });
+}
+
+function renderSidebar() {
+  const list = document.getElementById('q-list');
+  list.innerHTML = '';
+  S.questions.forEach((q, i) => {
+    const r = rec(i);
+    const dc = r.status === 'correct' ? 'dot-correct' : r.status === 'wrong' ? 'dot-wrong' : r.status === 'unknown' ? 'dot-unknown' : r.flagged ? 'dot-flagged' : 'dot-none';
+    const el = document.createElement('div');
+    el.className = 'q-item' + (i === S.current ? ' sel' : '');
+    el.innerHTML = `<div class="dot ${dc}"></div><span class="q-num">${i+1}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.77rem;">${q.text.slice(0,28)}…</span>`;
+    el.onclick = () => { S.current = i; renderQ(); };
+    list.appendChild(el);
+  });
+}
+
+function renderStats() {
+  const all = S.questions.map((_, i) => rec(i));
+  const c = all.filter(r => r.status === 'correct').length;
+  const w = all.filter(r => r.status === 'wrong').length;
+  const u = all.filter(r => r.status === 'unknown').length;
+  const f = all.filter(r => r.flagged).length;
+  const t = S.questions.length;
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-item"><div class="stat-num" style="color:var(--green)">${c}</div><div class="stat-lbl">정답</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--red)">${w}</div><div class="stat-lbl">오답</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--yellow)">${u}</div><div class="stat-lbl">모름</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--accent)">${f}</div><div class="stat-lbl">중요</div></div>`;
+  document.getElementById('sidebar-stats').innerHTML = `
+    <span>✅ ${c} &nbsp; ❌ ${w} &nbsp; ❓ ${u} &nbsp; 🔖 ${f}</span>
+    <div class="prog-wrap"><div class="prog-fill" style="width:${t?((c+w+u)/t*100).toFixed(1):0}%;background:var(--green)"></div></div>
+    <span style="font-size:.7rem;color:var(--text3)">채점 ${c+w+u} / ${t}</span>`;
+}
+
+// ── AI Explanation ───────────────────────────────────────
+window.getExplanation = async (regen = false) => {
+  const r = rec(); if (r.answer && !regen) return;
+  const ab = document.getElementById('ans-box');
+  ab.innerHTML = `<div class="thinking"><span>해설 생성 중</span><div class="dots"><span></span><span></span><span></span></div></div>`;
+  document.getElementById('explain-btn').disabled = true;
+  const q = S.questions[S.current];
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514', max_tokens: 1000,
+        system: `당신은 마취통증의학과(마취과) 전문의입니다. 전공의를 위해 다음 형식으로 해설하세요:
+## 핵심 정답
+## 해설
+## 관련 개념
+## 임상 팁
+한국어로 작성, 의학 용어는 영문 병기.`,
+        messages: [{ role: 'user', content: `다음 마취과 문제 해설:\n\n${q.text}` }]
+      })
+    });
+    const data = await res.json();
+    const ans = data.content?.find(c => c.type === 'text')?.text || '해설을 가져오지 못했습니다.';
+    r.answer = ans;
+    ab.innerHTML = fmtAns(ans);
+    await dbSave(S.pdfName, S.current, r);
+  } catch(e) {
+    ab.innerHTML = `<span style="color:var(--red)">오류: ${e.message}</span>`;
+  }
+  document.getElementById('explain-btn').disabled = false;
+};
+
+function fmtAns(t) {
+  return t
+    .replace(/## (.+)/g, '<div class="ah">$1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Actions ──────────────────────────────────────────────
+window.navigate = (d) => {
+  const n = S.current + d;
+  if (n < 0 || n >= S.questions.length) return;
+  S.current = n; renderQ(); renderSidebar();
+};
+
+window.toggleFlag = async () => {
+  const r = rec(); r.flagged = !r.flagged;
+  renderQ(); renderSidebar(); renderStats();
+  toast(r.flagged ? '중요 표시됨' : '표시 해제');
+  await dbSave(S.pdfName, S.current, r);
+};
+
+window.setStatus = async (s) => {
+  const r = rec(); r.status = r.status === s ? null : s;
+  renderQ(); renderSidebar(); renderStats();
+  await dbSave(S.pdfName, S.current, r);
+};
+
+window.saveMemo = async () => {
+  const r = rec(); r.memo = document.getElementById('memo-input').value;
+  renderSidebar(); toast('메모 저장됨');
+  await dbSave(S.pdfName, S.current, r);
+};
+
+// ── Review ───────────────────────────────────────────────
+window.setFilter = (f, btn) => {
+  S.filter = f;
+  document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderReview();
+};
+
+function renderReview() {
+  let items = S.questions.map((q, i) => ({ q, i, r: rec(i) }));
+  if (S.filter === 'wrong')   items = items.filter(x => x.r.status === 'wrong');
+  else if (S.filter === 'unknown') items = items.filter(x => x.r.status === 'unknown');
+  else if (S.filter === 'flagged') items = items.filter(x => x.r.flagged);
+  else if (S.filter === 'memo')    items = items.filter(x => x.r.memo?.trim());
+  else items = items.filter(x => x.r.status === 'wrong' || x.r.status === 'unknown' || x.r.flagged);
+
+  const list = document.getElementById('rv-list');
+  if (!items.length) { list.innerHTML = `<div class="empty">🎉 해당 항목이 없습니다</div>`; return; }
+  list.innerHTML = items.map(({ q, i, r }) => `
+    <div class="rv-card" onclick="jumpTo(${i})">
+      <div class="rv-top">
+        <span class="q-num" style="font-size:.77rem">Q${i+1}</span>
+        ${r.status==='wrong'   ? '<span class="badge b-red">❌ 오답</span>'   : ''}
+        ${r.status==='unknown' ? '<span class="badge b-yellow">❓ 모름</span>': ''}
+        ${r.flagged            ? '<span class="badge b-blue">🔖 중요</span>'  : ''}
+      </div>
+      <div class="rv-q">${q.text.slice(0,120)}${q.text.length>120?'…':''}</div>
+      ${r.memo ? `<div class="rv-memo">📝 ${r.memo.slice(0,60)}${r.memo.length>60?'…':''}</div>` : ''}
+    </div>`).join('');
+}
+
+window.jumpTo = (i) => { S.current = i; showScreen('quiz'); renderQ(); };
+
+// ── Screen ───────────────────────────────────────────────
+window.showScreen = (sc) => {
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&sc==='quiz')||(i===1&&sc==='review')));
+  if (!S.questions.length) {
+    ['upload-screen','quiz-screen','review-screen'].forEach(id => {
+      document.getElementById(id).style.display = id==='upload-screen' ? 'flex' : 'none';
+    });
+    return;
+  }
+  document.getElementById('upload-screen').style.display = 'none';
+  document.getElementById('quiz-screen').style.display   = sc==='quiz'   ? 'flex' : 'none';
+  document.getElementById('review-screen').style.display = sc==='review' ? 'flex' : 'none';
+  if (sc==='review') renderReview();
+};
+
+window.resetAll = () => {
+  if (!confirm('현재 세션을 초기화하고 새 파일을 업로드하시겠습니까?\n(DB에 저장된 데이터는 유지됩니다)')) return;
+  S.questions=[]; S.records={}; S.current=0; S.pdfName='';
+  document.getElementById('sidebar').style.display='none';
+  document.getElementById('q-list').innerHTML='';
+  document.getElementById('file-input').value='';
+  showScreen('quiz');
+};
+
+// ── Toast ────────────────────────────────────────────────
+let _tt;
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (type==='warn' ? ' warn' : '');
+  clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove('show'), 2400);
+}
+</script>
+</body>
+</html>
